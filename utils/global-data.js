@@ -8,9 +8,17 @@ export const getGlobalData = () => {
   const footerText = process.env.BLOG_FOOTER_TEXT
     ? decodeURI(process.env.BLOG_FOOTER_TEXT)
     : 'All rights reserved.';
+  const blogFontHeadings = process.env.BLOG_FONT_HEADINGS
+    ? decodeURI(process.env.BLOG_FONT_HEADINGS)
+    : 'monospace';
+  const blogFontParagraphs = process.env.BLOG_FONT_PARAGRAPHS
+    ? decodeURI(process.env.BLOG_FONT_PARAGRAPHS)
+    : 'monospace';
 
   return {
     name,
+    blogFontParagraphs,
+    blogFontHeadings,
     blogTitle,
     footerText,
   };

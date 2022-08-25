@@ -11,11 +11,11 @@ import SEO from '../components/SEO';
 export default function Index({ posts, globalData }) {
   return (
     <Layout>
-      <SEO title={globalData.name} description={globalData.blogTitle} />
-      <Header name={globalData.name} />
+      <SEO title={'Patrick Ortell'} description={'Software Ramblings'} />
+      <Header name={'Patrick Ortell'} />
       <main className="w-full">
         <h1 className="text-3xl lg:text-5xl text-center mb-12">
-          {globalData.blogTitle}
+          Software Ramblings
         </h1>
         <ul className="w-full">
           {posts.map((post) => (
