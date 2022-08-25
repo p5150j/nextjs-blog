@@ -15,7 +15,13 @@ export default function Index({ posts, globalData }) {
       <Header name={'Patrick Ortell'} />
       <main className="w-full">
         <h1 className="text-3xl lg:text-5xl text-center mb-12">
-          Software Ramblings
+          Software Ramblings <br />
+          blogFontParagraphs: {globalData.blogFontParagraphs}
+          <br />
+          blogFontHeadings: {globalData.blogFontHeadings}
+          <br />
+          blogTheme: {globalData.blogTheme}
+          <br />
         </h1>
         <ul className="w-full">
           {posts.map((post) => (

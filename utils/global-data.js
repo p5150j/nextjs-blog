@@ -14,9 +14,13 @@ export const getGlobalData = () => {
   const blogFontParagraphs = process.env.BLOG_FONT_PARAGRAPHS
     ? decodeURI(process.env.BLOG_FONT_PARAGRAPHS)
     : 'monospace';
+  const blogTheme = process.env.BLOG_THEME
+    ? decodeURI(process.env.BLOG_THEME)
+    : 'bejamas';
 
   return {
     name,
+    blogTheme,
     blogFontParagraphs,
     blogFontHeadings,
     blogTitle,
