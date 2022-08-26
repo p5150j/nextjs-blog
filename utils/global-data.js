@@ -16,7 +16,10 @@ export const getGlobalData = () => {
     : 'monospace';
   const blogTheme = process.env.BLOG_THEME
     ? decodeURI(process.env.BLOG_THEME)
-    : 'bejamas';
+    : 'default';
+
+  console.log('what theme is this ==> ' + blogTheme);
+  // console.log(process.env.BLOG_THEME);
 
   return {
     name,
