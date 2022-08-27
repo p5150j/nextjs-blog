@@ -15,7 +15,7 @@ export default function Index({ posts, globalData }) {
       <Header name={'Patrick Ortell'} />
       <main className="w-full">
         <h1 className="text-3xl lg:text-5xl text-center mb-12">
-          //my software Ramblings
+          //my software ramblings
           <br />
           {/* blogFontParagraphs: {globalData.blogFontParagraphs}
           <br />
