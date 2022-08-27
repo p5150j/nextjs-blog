@@ -15,7 +15,9 @@ export default function Index({ posts, globalData }) {
       <Header name={'Patrick Ortell'} />
       <main className="w-full">
         <h1 className="text-3xl lg:text-5xl text-center mb-12">
-          Software Ramblings <br />
+          sudo n* install hippocampus
+          <br /> //my ramblings
+          <br />
           {/* blogFontParagraphs: {globalData.blogFontParagraphs}
           <br />
           blogFontHeadings: {globalData.blogFontHeadings}
