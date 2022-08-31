@@ -3,6 +3,12 @@
 @tailwind utilities;
 @tailwind variants;
 
+
+.items-center {
+  align-items: normal!important;
+}
+
+
 h1,
 h2,
 h3,

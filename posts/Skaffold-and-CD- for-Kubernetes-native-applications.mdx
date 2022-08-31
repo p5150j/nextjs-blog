@@ -1,0 +1,124 @@
+---
+title: Skaffold and CD for Kubernetes-native applications
+description: "Skaffold is a command line tool that facilitates continuous development for Kubernetes-native applications."
+date: Aug 31 2022
+---
+
+Skaffold handles the workflow for building, pushing, and deploying your application, and provides building blocks for creating CI/CD pipelines. This enables you to focus on iterating on your application locally while Skaffold continuously deploys to your local or remote Kubernetes cluster.
+
+### Lets begin
+
+```js
+brew install skaffold 
+```
+
+Youll need to make sure you have Docker installed
+docker image
+and have Kube setup Dcoker Desktop>Settings>Kube>Enable 
+
+Then install kubectl
+```js
+brew install kubectl
+```
+verify 
+```js
+kubectl version --client
+```
+
+Now lets get minikube
+
+```js
+curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-darwin-arm64
+sudo install minikube-darwin-arm64 /usr/local/bin/minikube
+```
+test and make sure
+```js
+minikube start
+```
+
+Cool nmow we can get back to skaffold
+
+```js
+minikube start --profile custom
+```
+```js
+skaffold config set --global local-cluster true
+```
+
+```js
+eval $(minikube -p custom docker-env)
+```
+
+Google has a quick sample app you can use 
+```js
+git clone --depth 1 https://github.com/GoogleContainerTools/skaffold
+cd skaffold/examples/getting-started
+```
+
+
+Its just a simople Go app
+```js
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	for {
+		fmt.Println("Hello world!")
+
+		time.Sleep(time.Second * 1)
+	}
+}
+```
+Then just run 
+
+```js
+skaffold dev
+```
+
+Then just change the Go app and save it
+```js
+package main
+import (
+    "fmt"
+    "time"
+)
+
+
+func main() {
+    for {
+        fmt.Println("Hello Skaffold!")
+        time.Sleep(time.Second * 1)
+    }
+}
+```
+
+and you will see the comtainer apply the changes!!
+```js
+ => exporting to image                                                                      0.0s
+ => => exporting layers                                                                     0.0s
+ => => writing image sha256:63c9c924ad3bd557b03e7b04c60a99fd1aed81d2d82dfa3c134824e65a2758  0.0s
+ => => naming to docker.io/library/skaffold-example:532bb48-dirty                           0.0s
+
+Use 'docker scan' to run Snyk tests against images to find vulnerabilities and learn how to fix them
+Build [skaffold-example] succeeded
+Tags used in deployment:
+ - skaffold-example -> skaffold-example:63c9c924ad3bd557b03e7b04c60a99fd1aed81d2d82dfa3c134824e65a275844
+Starting deploy...
+ - pod/getting-started configured
+Waiting for deployments to stabilize...
+ - pods is ready.
+Deployments stabilized in 2.083 seconds
+Watching for changes...
+[getting-started] Hello Skaffold!
+```
+
+
+
+
+
+
+
