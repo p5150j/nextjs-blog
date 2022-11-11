@@ -1,0 +1,73 @@
+---
+title: Prometheus Deep Dive
+description: "Prometheus open-source monitoring and alerting tool. We will discuss how to install, configure, and run the various components of the Prometheus ecosystem."
+date: Nov 1 2022
+---
+
+### Lets begin
+
+
+Lets assume you have an AWS VM, for this Ill be using a basic Ubuntu t2.micro on AWS.
+ssh into your vm 
+
+````
+ssh -i "<your>.pem" ubuntu@ec2-<your-ip>.compute-1.amazonaws.com
+````
+
+We will want to add a user and a group that will be used by Prometheus.
+
+```
+sudo useradd -M -r -s /bin/false prometheus
+```
+
+Now lets make some folders for configs and prometheus data
+```
+sudo mkdir /etc/prometheus 
+sudo mkdir /var/lib/prometheus
+```
+ Now lets get the bianaries and u tar em'
+
+ ```
+ wget https://github.com/prometheus/prometheus/releases/download/v2.16.0/prometheus-2.16.0.linux-amd64.tar.gz
+ tar xzf prometheus-2.16.0.linux-amd64.tar.gz 
+ ```
+
+ Now lets move some stuff around and get them lioving in thben correct spces on the OS
+ ```
+sudo cp prometheus-2.16.0.linux-amd64/{prometheus,promtool} /usr/local/bin/
+ ```
+
+ add our -- Prometheus as the owner 
+ ```
+ sudo chown prometheus:prometheus /usr/local/bin/{prometheus,promtool}
+ ```
+
+ Move moving files around to the correct locations
+ ```
+ sudo cp -r prometheus-2.16.0.linux-amd64/{consoles,console_libraries} /etc/prometheus/
+ ```
+
+ Now lets move our config yml (we will get into editing the config later)
+ ```
+ sudo cp prometheus-2.16.0.linux-amd64/prometheus.yml /etc/prometheus/prometheus.yml
+ ```
+
+ again add our -- Prometheus user as the owner respectivly 
+ ```
+ sudo chown -R prometheus:prometheus /etc/prometheus
+ sudo chown prometheus:prometheus /var/lib/prometheus
+ ```
+
+ ## Lets give this a go!!
+
+ ```
+prometheus --config.file=/etc/prometheus/prometheus.yml
+ ```
+ and we should see it up and running
+ ```
+level=info ts=2022-11-11T16:17:13.183Z caller=main.go:676 fs_type=EXT4_SUPER_MAGIC
+level=info ts=2022-11-11T16:17:13.183Z caller=main.go:677 msg="TSDB started"
+level=info ts=2022-11-11T16:17:13.183Z caller=main.go:747 msg="Loading configuration file" filename=/etc/prometheus/prometheus.yml
+level=info ts=2022-11-11T16:17:13.186Z caller=main.go:775 msg="Completed loading of configuration file" filename=/etc/prometheus/prometheus.yml
+level=info ts=2022-11-11T16:17:13.187Z caller=main.go:630 msg="Server is ready to receive web requests."
+ ```
