@@ -4,70 +4,239 @@ description: "Prometheus open-source monitoring and alerting tool. We will discu
 date: Nov 1 2022
 ---
 
-### Lets begin
+### Lets get this setup
 
 
 Lets assume you have an AWS VM, for this Ill be using a basic Ubuntu t2.micro on AWS.
 ssh into your vm 
 
-````
+````bash
 ssh -i "<your>.pem" ubuntu@ec2-<your-ip>.compute-1.amazonaws.com
 ````
 
 We will want to add a user and a group that will be used by Prometheus.
 
-```
+```bash
 sudo useradd -M -r -s /bin/false prometheus
 ```
 
 Now lets make some folders for configs and prometheus data
-```
+```bash
 sudo mkdir /etc/prometheus 
 sudo mkdir /var/lib/prometheus
 ```
  Now lets get the bianaries and u tar em'
 
- ```
+ ```bash
  wget https://github.com/prometheus/prometheus/releases/download/v2.16.0/prometheus-2.16.0.linux-amd64.tar.gz
  tar xzf prometheus-2.16.0.linux-amd64.tar.gz 
  ```
 
  Now lets move some stuff around and get them lioving in thben correct spces on the OS
- ```
+ ```bash
 sudo cp prometheus-2.16.0.linux-amd64/{prometheus,promtool} /usr/local/bin/
  ```
 
  add our -- Prometheus as the owner 
- ```
+ ```bash
  sudo chown prometheus:prometheus /usr/local/bin/{prometheus,promtool}
  ```
 
- Move moving files around to the correct locations
- ```
+ More moving files around to the correct locations
+ ```bash
  sudo cp -r prometheus-2.16.0.linux-amd64/{consoles,console_libraries} /etc/prometheus/
  ```
 
  Now lets move our config yml (we will get into editing the config later)
- ```
+ ```bash
  sudo cp prometheus-2.16.0.linux-amd64/prometheus.yml /etc/prometheus/prometheus.yml
  ```
 
  again add our -- Prometheus user as the owner respectivly 
- ```
+ ```bash
  sudo chown -R prometheus:prometheus /etc/prometheus
  sudo chown prometheus:prometheus /var/lib/prometheus
  ```
 
- ## Lets give this a go!!
+ ### Lets give this a test!!
 
- ```
+ ```bash
 prometheus --config.file=/etc/prometheus/prometheus.yml
  ```
  and we should see it up and running
- ```
+ ```bash
 level=info ts=2022-11-11T16:17:13.183Z caller=main.go:676 fs_type=EXT4_SUPER_MAGIC
 level=info ts=2022-11-11T16:17:13.183Z caller=main.go:677 msg="TSDB started"
 level=info ts=2022-11-11T16:17:13.183Z caller=main.go:747 msg="Loading configuration file" filename=/etc/prometheus/prometheus.yml
 level=info ts=2022-11-11T16:17:13.186Z caller=main.go:775 msg="Completed loading of configuration file" filename=/etc/prometheus/prometheus.yml
 level=info ts=2022-11-11T16:17:13.187Z caller=main.go:630 msg="Server is ready to receive web requests."
  ```
+
+ Cool story bro, but this doesnt cover a production usecase nor give me an idea of how to even use it.
+
+ Lets start by making this a system service that just runs in the background and boots up if there is ever a restart.
+ 
+ Create a systemd unit file for Prometheus:
+ ```bash
+ sudo nano /etc/systemd/system/prometheus.service
+ ```
+
+ ```bash
+[Unit]
+Description=Prometheus Time Series Collection and Processing Server
+Wants=network-online.target
+After=network-online.target
+[Service]
+User=prometheus
+Type=simple
+ExecStart=/usr/local/bin/prometheus \
+ --config.file /etc/prometheus/prometheus.yml \
+ --storage.tsdb.path /var/lib/prometheus/ \
+ --web.console.templates=/etc/prometheus/consoles \
+ --web.console.libraries=/etc/prometheus/console_libraries
+[Install]
+WantedBy=multi-user.target
+ ```
+
+
+ Now lets start it in the background
+ ```bash
+ sudo systemctl daemon-reload
+ sudo systemctl start prometheus
+ sudo systemctl enable prometheus
+ ```
+
+ and you should get some outpout like this
+ ```bash
+ Created symlink /etc/systemd/system/multi-user.target.wants/prometheus.service → /etc/systemd/system/prometheus.service.
+ ```
+
+ Lets make sure its running
+ ```bash
+ curl localhost:9090
+ ```
+
+ Lets start playing around with the config a bit now 
+ ```shell
+ sudo nano /etc/prometheus/prometheus.yml 
+ ```
+and edit the `scrape_interval:` to something like `10s`
+```shell
+scrape_interval:     10s
+```
+
+and then we need to reboot prometheus
+```shell
+sudo systemctl start prometheus
+```
+
+or you can just do it without a full reboot
+```shell
+sudo killall -HUP prometheus
+```
+
+Now lets just verify the change has tenken effect
+
+```shell
+curl localhost:9090/api/v1/status/config
+```
+
+## Nuff talk, can I haz data?
+
+### Exporters
+A prometheus exporter is any application that exposes metric data in a format that can be collected (or scraped) by prometheus server.
+For example, Node exporter runs on an a *NIX machine and collects a varity of system metrics, It then exposes them to prometheus.
+Once we have our exporter setup we will need to point our scrap config 
+
+### For this we will need a VM we want to expoert data form
+I have again just spun up a simple Ubuntu t2.micro on AWS.
+ssh into your vm 
+
+````bash
+ssh -i "<your>.pem" ubuntu@ec2-<your-ip>.compute-1.amazonaws.com
+````
+Create a user for Node Exporter:
+```bash
+sudo useradd -M -r -s /bin/false node_exporter
+```
+
+Download and extract the Node Exporter binary:
+```bash
+wget https://github.com/prometheus/node_exporter/releases/download/
+v0.18.1/node_exporter-0.18.1.linux-amd64.tar.gz
+```
+
+```bash
+tar xvfz node_exporter-0.18.1.linux-amd64.tar.gz
+``` 
+Copy the Node Exporter binary to the appropriate location and set ownership:
+```bash
+sudo cp node_exporter-0.18.1.linux-amd64/node_exporter /usr/local/bin/
+```
+```bash
+sudo chown node_exporter:node_exporter /usr/local/bin/node_exporter
+```
+
+Create a systemd unit file for Node Exporter:
+```bash
+sudo nano /etc/systemd/system/node_exporter.service
+```
+Define the Node Exporter service in the unit file:
+```bash
+[Unit]
+Description=Prometheus Node Exporter
+Wants=network-online.target
+After=network-online.target
+[Service]
+User=node_exporter
+Group=node_exporter
+Type=simple
+ExecStart=/usr/local/bin/node_exporter
+[Install]
+WantedBy=multi-user.target
+```
+
+Start and enable the node_exporter service:
+```bash
+sudo systemctl daemon-reload
+sudo systemctl start node_exporter
+sudo systemctl enable node_exporter
+```
+
+and again you should see your output:
+```bash
+Created symlink /etc/systemd/system/multi-user.target.wants/node_exporter.service → /etc/systemd/system/node_exporter.service.
+```
+You can retrieve the metrics served by Node Exporter like so:
+```bash
+curl localhost:9100/metrics
+```
+and you should see your metrics output
+```bash
+.................
+......................
+# TYPE node_vmstat_pgmajfault untyped
+node_vmstat_pgmajfault 1228
+# HELP node_vmstat_pgpgin /proc/vmstat information field pgpgin.
+# TYPE node_vmstat_pgpgin untyped
+node_vmstat_pgpgin 246511
+# HELP node_vmstat_pgpgout /proc/vmstat information field pgpgout.
+# TYPE node_vmstat_pgpgout untyped
+node_vmstat_pgpgout 302657
+# HELP node_vmstat_pswpin /proc/vmstat information field pswpin.
+# TYPE node_vmstat_pswpin untyped
+node_vmstat_pswpin 0
+# HELP node_vmstat_pswpout /proc/vmstat information field pswpout.
+# TYPE node_vmstat_pswpout untyped
+node_vmstat_pswpout 0
+# HELP process_cpu_seconds_total Total user and system CPU time spent in seconds.
+# TYPE process_cpu_seconds_total counter
+process_cpu_seconds_total 0
+# HELP process_max_fds Maximum number of open file descriptors.
+# TYPE process_max_fds gauge
+....................................
+.......................................................
+promhttp_metric_handler_requests_total{code="200"} 0
+promhttp_metric_handler_requests_total{code="500"} 0
+promhttp_metric_handler_requests_total{code="503"} 0
+```
