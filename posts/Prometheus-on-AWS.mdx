@@ -4,10 +4,10 @@ description: "Prometheus open-source monitoring and alerting tool. We will discu
 date: Nov 1 2022
 ---
 
-### Lets get this setup
+### Lets get this setup.
 
+Lets assume you have an AWS VM, for this Ill be using a basic Ubuntu t2.micro on AWS with `Port range inbound [9090, 443, 22, 80]`.
 
-Lets assume you have an AWS VM, for this Ill be using a basic Ubuntu t2.micro on AWS.
 ssh into your vm 
 
 ````bash
@@ -25,19 +25,20 @@ Now lets make some folders for configs and prometheus data
 sudo mkdir /etc/prometheus 
 sudo mkdir /var/lib/prometheus
 ```
- Now lets get the bianaries and u tar em'
+Now let's get/download the binaries and un-tar/extract em'
 
  ```bash
  wget https://github.com/prometheus/prometheus/releases/download/v2.16.0/prometheus-2.16.0.linux-amd64.tar.gz
  tar xzf prometheus-2.16.0.linux-amd64.tar.gz 
  ```
+### Lets do some organization.
 
- Now lets move some stuff around and get them lioving in thben correct spces on the OS
+ Now that we have them locally lets move/copy some stuff around and get them living in the correct directories we created before
  ```bash
 sudo cp prometheus-2.16.0.linux-amd64/{prometheus,promtool} /usr/local/bin/
  ```
 
- add our -- Prometheus as the owner 
+ add our Prometheus as the owner of the files in the directories
  ```bash
  sudo chown prometheus:prometheus /usr/local/bin/{prometheus,promtool}
  ```
@@ -52,13 +53,14 @@ sudo cp prometheus-2.16.0.linux-amd64/{prometheus,promtool} /usr/local/bin/
  sudo cp prometheus-2.16.0.linux-amd64/prometheus.yml /etc/prometheus/prometheus.yml
  ```
 
- again add our -- Prometheus user as the owner respectivly 
+ again add our Prometheus user as the owner respectivly to each directory
  ```bash
  sudo chown -R prometheus:prometheus /etc/prometheus
  sudo chown prometheus:prometheus /var/lib/prometheus
  ```
 
  ### Lets give this a test!!
+Just run prometheus and point to the config
 
  ```bash
 prometheus --config.file=/etc/prometheus/prometheus.yml
@@ -72,10 +74,11 @@ level=info ts=2022-11-11T16:17:13.186Z caller=main.go:775 msg="Completed loading
 level=info ts=2022-11-11T16:17:13.187Z caller=main.go:630 msg="Server is ready to receive web requests."
  ```
 
- Cool story bro, but this doesnt cover a production usecase nor give me an idea of how to even use it.
 
- Lets start by making this a system service that just runs in the background and boots up if there is ever a restart.
+ Cool story bro, but this doesnt cover a production usecase nor give me an idea of how to even use it. Lets start by making this a system service that just runs in the background and boots up if there is ever a restart.
  
+ ### Systemd that as a boot service.
+
  Create a systemd unit file for Prometheus:
  ```bash
  sudo nano /etc/systemd/system/prometheus.service
@@ -111,18 +114,25 @@ WantedBy=multi-user.target
  Created symlink /etc/systemd/system/multi-user.target.wants/prometheus.service → /etc/systemd/system/prometheus.service.
  ```
 
+ ### Test it out.
+
  Lets make sure its running
  ```bash
  curl localhost:9090
  ```
 
+ You can also hit your public IP and use the GUI on `port 9090`
+ 
+ ![alt text](https://arusimagesforsite.s3.us-west-2.amazonaws.com/prom.png "image Title")
+
+### Edit your config
  Lets start playing around with the config a bit now 
  ```shell
  sudo nano /etc/prometheus/prometheus.yml 
  ```
 and edit the `scrape_interval:` to something like `10s`
 ```shell
-scrape_interval:     10s
+scrape_interval: 10s
 ```
 
 and then we need to reboot prometheus
@@ -135,7 +145,7 @@ or you can just do it without a full reboot
 sudo killall -HUP prometheus
 ```
 
-Now lets just verify the change has tenken effect
+Now lets just verify the change has taken effect
 
 ```shell
 curl localhost:9090/api/v1/status/config
@@ -146,10 +156,13 @@ curl localhost:9090/api/v1/status/config
 ### Exporters
 A prometheus exporter is any application that exposes metric data in a format that can be collected (or scraped) by prometheus server.
 For example, Node exporter runs on an a *NIX machine and collects a varity of system metrics, It then exposes them to prometheus.
-Once we have our exporter setup we will need to point our scrap config 
+Once we have our exporter setup we will need to point our scrape config 
 
-### For this we will need a VM we want to expoert data form
-I have again just spun up a simple Ubuntu t2.micro on AWS.
+--------
+
+For this we will need a VM that we want to export data form.
+I have again, just spun up a simple Ubuntu t2.micro on AWS  with `Port range inbound [9100, 9090, 443, 22, 80] and outbound [9100]`.
+
 ssh into your vm 
 
 ````bash
@@ -239,4 +252,55 @@ process_cpu_seconds_total 0
 promhttp_metric_handler_requests_total{code="200"} 0
 promhttp_metric_handler_requests_total{code="500"} 0
 promhttp_metric_handler_requests_total{code="503"} 0
+```
+
+### Configure Prometheus to Scrape Metrics
+
+
+Lets go back to our Prometheus server VM now so we can scrape the metrics. We will edit the prometheus.yml and add our exporter to that file
+```bash
+ sudo nano /etc/prometheus/prometheus.yml
+ ```
+Now lets make sure its pointed to our exporter on the other server
+```bash
+scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  - job_name: 'prometheus'
+    static_configs:
+    - targets: ['localhost:9090']
+
+# adding the new one here
+  - job_name: 'Prom export box'
+    static_configs:
+    - targets: ['<Your-Private-IP>:9100']
+```
+
+Then make sure you bounce the config to read the new version 
+```bash
+sudo killall -HUP prometheus
+```
+
+You can also hit your public IP and use the GUI on `port 9090` and query the `up` metric to validate you have data coming back.
+
+ ![alt text](https://arusimagesforsite.s3.us-west-2.amazonaws.com/promup.png "image Title")
+
+and you can see we have connected to the remote exporter
+```bash
+up{instance="<Your-Private-IP>:9100",job="Prom export box"}
+
+#(value = 1)
+```
+
+Lets try something more useful like query the `node_filesystem_avail_bytes` to see what storage is avalible
+
+and it should output directories and avalible space
+
+```bash
+node_filesystem_avail_bytes{device="/dev/root",fstype="ext4",instance="...:9100",job="Prom export box",mountpoint="/"}	5674483712
+node_filesystem_avail_bytes{device="/dev/xvda15",fstype="vfat",instance="...:9100",job="Prom export box",mountpoint="/boot/efi"}	103965696
+node_filesystem_avail_bytes{device="none",fstype="ramfs",instance="...:9100",job="Prom export box",mountpoint="/run/credentials/systemd-sysusers.service"}	0
+node_filesystem_avail_bytes{device="tmpfs",fstype="tmpfs",instance="...:9100",job="Prom export box",mountpoint="/run"}	201748480
+node_filesystem_avail_bytes{device="tmpfs",fstype="tmpfs",instance="...:9100",job="Prom export box",mountpoint="/run/lock"}	5242880
+node_filesystem_avail_bytes{device="tmpfs",fstype="tmpfs",instance="...:9100",job="Prom export box",mountpoint="/run/snapd/ns"}	201748480
+node_filesystem_avail_bytes{device="tmpfs",fstype="tmpfs",instance="...:9100",job="Prom export box",mountpoint="/run/user/1000"}	101306368
 ```
