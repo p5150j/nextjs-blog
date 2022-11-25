@@ -295,6 +295,8 @@ Lets try something more useful like query the `node_filesystem_avail_bytes` to s
 
 and it should output directories and avalible space
 
+ ![alt text](https://arusimagesforsite.s3.us-west-2.amazonaws.com/node_filesystem_avail_bytes.png "image Title")
+
 ```bash
 node_filesystem_avail_bytes{device="/dev/root",fstype="ext4",instance="...:9100",job="Prom export box",mountpoint="/"}	5674483712
 node_filesystem_avail_bytes{device="/dev/xvda15",fstype="vfat",instance="...:9100",job="Prom export box",mountpoint="/boot/efi"}	103965696
@@ -312,6 +314,9 @@ Thats nice and all, but what about something like time-series data? You know, li
 #### Metric names and Labels
 One of things I found was that just pulling a metric name via a query will get back more data than I ahd assumed.
 As an example if I query `node_cpu_seconds_total` I end up getting back all CPU states, on each CPU, and n* for each VM I have an exporter running on
+
+ ![alt text](https://arusimagesforsite.s3.us-west-2.amazonaws.com/node_cpu_seconds_total.png "image Title")
+
 ```bash
 node_cpu_seconds_total{cpu="0",.......mode="idle"}	610552.47
 node_cpu_seconds_total{cpu="0",.......mode="iowait"}	96.28
