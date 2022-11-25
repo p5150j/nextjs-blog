@@ -304,3 +304,21 @@ node_filesystem_avail_bytes{device="tmpfs",fstype="tmpfs",instance="...:9100",jo
 node_filesystem_avail_bytes{device="tmpfs",fstype="tmpfs",instance="...:9100",job="Prom export box",mountpoint="/run/snapd/ns"}	201748480
 node_filesystem_avail_bytes{device="tmpfs",fstype="tmpfs",instance="...:9100",job="Prom export box",mountpoint="/run/user/1000"}	101306368
 ```
+
+Thats nice and all, but what about something like time-series data? You know, like somehting I can use for actaully using these mertics for more than just a static data pull.
+
+### Time-series Data
+
+#### Metric names and Labels
+One of things I found was that just pulling a metric name via a query will get back more data than I ahd assumed.
+As an example if I query `node_cpu_seconds_total` I end up getting back all CPU states, on each CPU, and n* for each VM I have an exporter running on
+```bash
+node_cpu_seconds_total{cpu="0",.......mode="idle"}	610552.47
+node_cpu_seconds_total{cpu="0",.......mode="iowait"}	96.28
+node_cpu_seconds_total{cpu="0",.......mode="irq"}	0
+node_cpu_seconds_total{cpu="0",.......mode="nice"}	109.83
+.......
+.................
+```
+
+Each of these are labels, and what prometheus calls dimensional data models. As you can see we have `cpu, instance, job, mode` and each have their own value that further dimensionalize the data.
