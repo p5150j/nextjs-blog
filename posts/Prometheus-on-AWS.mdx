@@ -327,3 +327,81 @@ node_cpu_seconds_total{cpu="0",.......mode="nice"}	109.83
 ```
 
 Each of these are labels, and what prometheus calls dimensional data models. As you can see we have `cpu, instance, job, mode` and each have their own value that further dimensionalize the data.
+With lables in mind, lets try and filter that list down even further..
+
+
+```bash
+node_cpu_seconds_total{mode="idle"}
+```
+
+ ![alt text](https://arusimagesforsite.s3.us-west-2.amazonaws.com/node_cpu_seconds_total{mode="idle"}.png 'image Title')
+
+## Metric types 
+This is when you start to see the power of Prometheus as we can chain our lables with a time durration.
+#### Counters 
+A counter is a single number that can only increase or be reset to zero.
+
+<em>eg: </em>
+
+- Number of HTTP requests served by the application
+- Number of records processed
+- Number of application restarts
+- Number of errors
+- etc...
+
+Lets try something with time durration 
+```bash
+node_cpu_seconds_total{mode="idle"}[5m]
+```
+ ![alt text](https://arusimagesforsite.s3.us-west-2.amazonaws.com/counter-5m.png "image Title")
+
+
+#### Gauge
+
+A gauge is a simgle number that can increase and decrease over time.
+
+<em>eg: </em>
+
+- Number of concurent HTTP requests 
+- CPU/GPU usage
+- Memeory usage
+- Current active threads
+- etc...
+
+and again... lets try something we know will + and - over time
+```bash
+node_memory_MemAvailable_bytes[5m]
+```
+ ![alt text](https://arusimagesforsite.s3.us-west-2.amazonaws.com/gauge-1.png "image Title")
+
+ #### Histogram
+
+ A Histogram counts the number of observations/events that fall into a set of configurable buckets, each with its own separate time series. A Histogram will use lables to differentiate between buckets. The below example shows the number of HTTP requests whose durration falls into each bucket.
+ For this examople lets have prometheus monitor itself (since its the only server we have http traffic on spun up on our VM)
+ ```bash
+ prometheus_http_request_duration_seconds_bucket{le="0.1"}
+ prometheus_http_request_duration_seconds_bucket{le="0.3"}
+ prometheus_http_request_duration_seconds_bucket{le="1.0"}
+ ```
+take this a step further and onyl grab requests from the /metrics endpoint that resolved in less that 0.1 seconds
+```bash
+prometheus_http_request_duration_seconds_bucket{handler="/metrics", le="0.1"}
+```
+
+
+ Histograms also include metric names to expose the `_sum` of all values and the total `_count` of them
+ ```bash
+prometheus_http_request_duration_seconds_count{handler="/metrics"}
+prometheus_http_request_duration_seconds_sum{handler="/metrics"}
+ ```
+ This lets us get the full sum and count.
+
+  #### Summary
+
+  A Summary is similar to a Histogram, but it exposes metrics in the form of quantiles instead of buckets. While buckets divide values based on boundries, quantiles divide values based on percentiles into which they fall.
+  This value shows the number of HTTP requests whose durration falls within the 95th % of all requests or 5% on longest requests. These arent used as much, but worth calling out as we might use them later.
+
+Lets check garbage collection golang metrics 
+```bash
+go_gc_duration_seconds{quantile="0.25"}
+```
