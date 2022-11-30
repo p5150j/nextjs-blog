@@ -405,3 +405,43 @@ Lets check garbage collection golang metrics
 ```bash
 go_gc_duration_seconds{quantile="0.25"}
 ```
+
+## Querying (PromQL)
+You can use Prometheus queries (PromQL) in a varity of ways to obtain and work with your data.
+- Expression browser (like youve seen so far)
+- Prometheus API 
+- Visulation tools like Grafana 
+
+### Label Matching 
+Youve seen simple label's `node_cpu_seconds_total{cpu="0"}` , but we can extend this even further with label matching
+- =: Equals
+- !=: Does not equal
+- =~: Regex matching
+- !~: Does not regex match 
+---
+```bash
+node_cpu_seconds_total{cpu="0"}
+node_cpu_seconds_total{cpu=!"0"}
+node_cpu_seconds_total{cpu=~"1*"}
+node_cpu_seconds_total{cpu!~"1*"}
+```
+
+### Offset modifier 
+You can use this to select data from the past and chain all our other selctors on top of it.
+
+```bash
+node_cpu_seconds_total offset 1h
+node_cpu_seconds_total[5m] offset 1h
+```
+
+## Query Operators 
+
+### Arithmetic Bianry Operators
+
+The following operators preform basic arithmetic on numeric values
+- +: add
+- -: subtract
+- *: multiply
+- /: divide
+- %: modulo
+- ^: exponent
