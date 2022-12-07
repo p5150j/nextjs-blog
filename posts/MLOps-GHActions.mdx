@@ -1,7 +1,136 @@
 ---
-title: MLOps using GitHub actions
+title: MLOps using GitHub actions custom runner
 description: "MLOps and using GitHub actions and CML for continuous integration in an ML pipline."
 date: Sept 1 2022
 ---
 
 ### Lets begin
+
+
+Out of the box, GitHub actions have a small general-purpose VM runner that is good for quick and dirty jobs and fit many use cases. But there are times when you need more customization of your runner like an AWS or Azure VM, or maybe even a massive GPU machine in your office lab.
+
+Welcome to custom runners.
+For this example, we will just use a remote EC2 instance but the steps would be the same for any other platform, a GPU box in your lab.. Or even if you wanted to have a runner on a raspberry pi
+
+
+Navigate to your repository's main page and click on the Settings tab.
+Then,
+
+- Click on the Actions option on the left-hand-side menu
+- Click on the new self-hosted runner
+- Select the operating system and architecture of the machine you will use to host the runner application.
+
+SSH into your machine/vm or login to the machine your like the action to use as the runner
+In this case ssh into my vm ubuntu@ip-172-31-34-211:~$ 
+
+
+
+```bash
+
+# Create a folder
+$ mkdir actions-runner && cd actions-runner
+# Download the latest runner package
+$ curl -o actions-runner-linux-x64-2.299.1.tar.gz -L https://github.com/actions/runner/releases/download/v2.299.1/actions-runner-linux-x64-2.299.1.tar.gz
+
+# Extract the installer
+$ tar xzf ./actions-runner-linux-x64-2.299.1.tar.gz
+```
+
+Now lets configure it to talk communicate with GitHub
+
+
+```bash
+
+# Create the runner and start the configuration experience
+$ ./config.sh --url https://github.com/yourOrg/yourRepo --token <YOURTOKEN>
+# Last step, run it!
+$ ./run.sh
+
+```
+You should see your runner running!!! 
+
+```bash
+
+--------------------------------------------------------------------------------
+|        ____ _ _   _   _       _          _        _   _                      |
+|       / ___(_) |_| | | |_   _| |__      / \   ___| |_(_) ___  _ __  ___      |
+|      | |  _| | __| |_| | | | | '_ \    / _ \ / __| __| |/ _ \| '_ \/ __|     |
+|      | |_| | | |_|  _  | |_| | |_) |  / ___ \ (__| |_| | (_) | | | \__ \     |
+|       \____|_|\__|_| |_|\__,_|_.__/  /_/   \_\___|\__|_|\___/|_| |_|___/     |
+|                                                                              |
+|                       Self-hosted runner registration                        |
+|                                                                              |
+--------------------------------------------------------------------------------
+
+# Authentication
+
+
+√ Connected to GitHub
+
+# Runner Registration
+
+Enter the name of the runner group to add this runner to: [press Enter for Default] 
+
+Enter the name of runner: [press Enter for ip-172-31-34-211] SpexAI
+
+This runner will have the following labels: 'self-hosted', 'Linux', 'X64' 
+Enter any additional labels (ex. label-1,label-2): [press Enter to skip] 
+
+√ Runner successfully added
+√ Runner connection is good
+
+# Runner settings
+
+Enter name of work folder: [press Enter for _work] 
+
+√ Settings Saved.
+
+ubuntu@ip-172-31-34-211:~/actions-runner$ ./run.sh
+
+√ Connected to GitHub
+
+Current runner version: '2.299.1'
+2022-12-07 03:19:06Z: Listening for Jobs
+
+```
+
+
+The Listening for Jobs output you can see in the preceding block confirms that the script ran successfully. 
+It also signals that the self-hosted runner is ready to be used in a workflow. 
+
+To verify that the runner has also been added on the GitHub side, navigate to your repository's Settings page.
+
+[image]
+
+want to do this https://docs.github.com/en/actions/hosting-your-own-runners/configuring-the-self-hosted-runner-application-as-a-service 
+
+
+
+Now we will g=crerate a github action to talk to the runner. (need more text)
+
+```bash
+# Patrick Ortell 09/01/2022
+name: CI
+# Controls when the workflow will run
+on:
+  # Triggers the workflow on push or pull request events but only for the "main" branch
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+  # Allows you to run this workflow manually from the Actions tab
+  workflow_dispatch:
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This workflow contains a single job called "build"
+  build-train:
+    # The custom ec2 runner that the job will run on
+    runs-on: [self-hosted, Linux, X64]
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v3
+      # Runs a single command using the runners shell
+      - name: list files
+        run:  ls  
+```
